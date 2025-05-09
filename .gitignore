@@ -8,3 +8,14 @@
 
 !go.mod
 !go.sum
+
+!*.go
+
+!artifacts
+!artifacts/samples
+
+!cmd
+!cmd/jarvis
+
+!internal
+!internal/ffmpeg
