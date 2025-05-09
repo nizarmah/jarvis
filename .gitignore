@@ -11,11 +11,18 @@
 
 !*.go
 
+!docker-compose.yml
+!Dockerfile
+
 !artifacts
 !artifacts/samples
+!artifacts/samples/*.wav
 
 !cmd
 !cmd/jarvis
+
+!infra
+!infra/whisper
 
 !internal
 !internal/ffmpeg

@@ -1,0 +1,8 @@
+version: "3"
+
+services:
+  whisper:
+    build:
+      context: ./infra/whisper
+    volumes:
+      - ./artifacts/samples:/app/artifacts/samples
