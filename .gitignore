@@ -1,0 +1,10 @@
+# ignore all files
+*
+
+# except these files
+!.gitignore
+
+!README.md
+
+!go.mod
+!go.sum
