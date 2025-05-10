@@ -26,3 +26,4 @@
 
 !internal
 !internal/ffmpeg
+!internal/whisper

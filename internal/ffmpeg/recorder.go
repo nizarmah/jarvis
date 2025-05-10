@@ -27,6 +27,14 @@ type Recorder struct {
 
 // NewRecorder initializes the recorder.
 func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
+	if cfg.OutputDir == "" {
+		return nil, fmt.Errorf("output directory is required")
+	}
+
+	if err := createDirIfNotExists(cfg.OutputDir); err != nil {
+		return nil, fmt.Errorf("failed to create output dir: %w", err)
+	}
+
 	switch cfg.Platform {
 	case PlatformMac, PlatformLinux, PlatformWindows:
 		return &Recorder{
@@ -42,10 +50,6 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 
 // Start starts a rolling recorder using ffmpeg.
 func (r *Recorder) Start(ctx context.Context) error {
-	if err := createDirIfNotExists(r.outputDir); err != nil {
-		return fmt.Errorf("failed to start recorder: %w", err)
-	}
-
 	args, err := buildRecorderArgs(r.platform, r.outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to build args: %w", err)

@@ -10,10 +10,19 @@ None.
 
 ## Usage
 
+### Setup
+
+1. Start [whisper](infra/whisper/README.md).
+
+### Run
+
 ```bash
+# From the repo root directory
 go run cmd/jarvis/main.go
 ```
 
-## Debug
+## Development
 
-Modify the variables in `cmd/jarvis/main.go` to enable debug logs. Then, run as you normally would.
+### Debug
+
+Enable debug in [`cmd/jarvis/main.go`](cmd/jarvis/main.go) and run as you normally would.

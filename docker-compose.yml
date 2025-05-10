@@ -5,4 +5,4 @@ services:
     build:
       context: ./infra/whisper
     volumes:
-      - ./artifacts/samples:/app/artifacts/samples
+      - ./artifacts:/app/artifacts

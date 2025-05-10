@@ -5,21 +5,28 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/nizarmah/jarvis/internal/ffmpeg"
+	"github.com/nizarmah/jarvis/internal/whisper"
 )
 
 const (
-	recorderDebug = false
-	combinerDebug = false
+	transcriberDebug = false
+	recorderDebug    = false
+	combinerDebug    = false
 )
 
 const (
 	ffmpegPlatform    = ffmpeg.PlatformMac
 	ffmpegChunksDir   = "artifacts/audio_chunks"
 	ffmpegCombinedDir = "artifacts/audio_combined"
+)
+
+const (
+	whisperOutputDir = "artifacts/audio_transcripts"
 )
 
 func main() {
@@ -29,6 +36,15 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL,
 	)
 	defer cancel()
+
+	// Initialize the transcriber.
+	transcriber, err := whisper.NewTranscriber(ctx, whisper.TranscriberConfig{
+		Debug:     transcriberDebug,
+		OutputDir: whisperOutputDir,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize the recorder.
 	recorder, err := ffmpeg.NewRecorder(ffmpeg.RecorderConfig{
@@ -42,10 +58,12 @@ func main() {
 
 	// Initialize the combiner.
 	combiner, err := ffmpeg.NewCombiner(ffmpeg.CombinerConfig{
-		Debug:      combinerDebug,
-		InputDir:   ffmpegChunksDir,
-		OutputDir:  ffmpegCombinedDir,
-		OnCombined: onCombined,
+		Debug:     combinerDebug,
+		InputDir:  ffmpegChunksDir,
+		OutputDir: ffmpegCombinedDir,
+		OnCombined: func(ctx context.Context, filePath string) error {
+			return processAudio(ctx, transcriber, filePath)
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -74,7 +92,19 @@ func main() {
 	log.Println("Context cancelled — exiting.")
 }
 
-func onCombined(_ context.Context, filename string) error {
-	log.Println(fmt.Sprintf("on combined: %s", filename))
+func processAudio(ctx context.Context, transcriber *whisper.Transcriber, filePath string) error {
+	// Transcribe the audio file.
+	transcription, err := transcriber.Transcribe(ctx, filePath)
+	if err != nil {
+		return fmt.Errorf("process audio failed during transcription: %w", err)
+	}
+
+	// Clean up the audio file.
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("process audio failed during cleanup: %w", err)
+	}
+
+	log.Println(fmt.Sprintf("processed audio: %s", transcription))
+
 	return nil
 }

@@ -14,7 +14,7 @@ import (
 )
 
 // OnCombinedFunc is the callback for post-processing the combined file.
-type OnCombinedFunc func(ctx context.Context, filename string) error
+type OnCombinedFunc func(ctx context.Context, filePath string) error
 
 // CombinerConfig is the configuration for the combiner.
 type CombinerConfig struct {
@@ -44,8 +44,16 @@ func NewCombiner(cfg CombinerConfig) (*Combiner, error) {
 		return nil, fmt.Errorf("input directory is required")
 	}
 
+	if err := createDirIfNotExists(cfg.InputDir); err != nil {
+		return nil, fmt.Errorf("failed to create input dir: %w", err)
+	}
+
 	if cfg.OutputDir == "" {
 		return nil, fmt.Errorf("output directory is required")
+	}
+
+	if err := createDirIfNotExists(cfg.OutputDir); err != nil {
+		return nil, fmt.Errorf("failed to create output dir: %w", err)
 	}
 
 	if cfg.OnCombined == nil {
@@ -64,14 +72,6 @@ func NewCombiner(cfg CombinerConfig) (*Combiner, error) {
 func (c *Combiner) Start(ctx context.Context) error {
 	if c.watcher != nil {
 		return fmt.Errorf("combiner already started")
-	}
-
-	if err := createDirIfNotExists(c.inputDir); err != nil {
-		return fmt.Errorf("failed to start combiner: %w", err)
-	}
-
-	if err := createDirIfNotExists(c.outputDir); err != nil {
-		return fmt.Errorf("failed to start combiner: %w", err)
 	}
 
 	watcher, err := fsnotify.NewWatcher()
