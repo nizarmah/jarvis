@@ -2,6 +2,7 @@
 package ffmpeg
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,27 +19,41 @@ const (
 	PlatformWindows platform = "windows"
 )
 
-// Recorder is a rolling recorder for audio chunks.
-type Recorder struct {
-	platform  platform
-	outputDir string
-
-	cmd *exec.Cmd
+// Options for the recorder.
+type Options struct {
+	// Debug enables logging during ffmpeg command execution.
+	Debug bool
+	// Platform is the platform for the recorder.
+	Platform platform
+	// OutputDir is the directory for the audio chunks.
+	OutputDir string
 }
 
-// New initializes the recorder.
-func New(p platform, outputDir string) (*Recorder, error) {
-	switch p {
+// Recorder is a rolling recorder for audio chunks.
+type Recorder struct {
+	cmd       *exec.Cmd
+	debug     bool
+	outputDir string
+	platform  platform
+}
+
+// NewRecorder initializes the recorder.
+func NewRecorder(opts Options) (*Recorder, error) {
+	switch opts.Platform {
 	case PlatformMac, PlatformLinux, PlatformWindows:
-		return &Recorder{platform: p, outputDir: outputDir}, nil
+		return &Recorder{
+			debug:     opts.Debug,
+			outputDir: opts.OutputDir,
+			platform:  opts.Platform,
+		}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported platform: %q", p)
+		return nil, fmt.Errorf("unsupported platform: %q", opts.Platform)
 	}
 }
 
 // Start starts a rolling recorder using ffmpeg.
-func (r *Recorder) Start() error {
+func (r *Recorder) Start(ctx context.Context) error {
 	if err := createOutputDirIfNotExists(r.outputDir); err != nil {
 		return fmt.Errorf("failed to start recorder: %w", err)
 	}
@@ -48,9 +63,11 @@ func (r *Recorder) Start() error {
 		return err
 	}
 
-	cmd := exec.Command("ffmpeg", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+	if r.debug {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	// Store the command for future use.
 	r.cmd = cmd
