@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +14,10 @@ import (
 	"github.com/nizarmah/jarvis/internal/ffmpeg"
 	"github.com/nizarmah/jarvis/internal/ollama"
 	"github.com/nizarmah/jarvis/internal/whisper"
+)
+
+const (
+	executorPort = "4242"
 )
 
 const (
@@ -132,26 +137,28 @@ func main() {
 	log.Println("Context cancelled — exiting.")
 }
 
+// CreateAudioProcessor creates a function that transcribes the audio file and extracts the command.
 func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Client) ffmpeg.OnCombinedFunc {
 	return func(ctx context.Context, filePath string) error {
 		// Transcribe the audio file.
 		transcript, err := transcribeAudio(ctx, transcriber, filePath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to transcribe audio: %w", err)
 		}
 
 		// Build a prompt to instruct LLM.
 		prompt := fmt.Sprintf(promptTemplate, transcript)
 
-		log.Println(fmt.Sprintf("prompt: %s", prompt))
-
 		// Prompt the LLM.
 		cmd, err := ollama.Prompt(ctx, prompt)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to prompt LLM: %w", err)
 		}
 
-		log.Println(fmt.Sprintf("command: %s", cmd))
+		// Execute the command.
+		if err := executeCommand(ctx, cmd); err != nil {
+			return fmt.Errorf("failed to execute command: %w", err)
+		}
 
 		if ollamaDebug {
 			log.Println(fmt.Sprintf("transcript: %s, command: %s", transcript, cmd))
@@ -161,17 +168,41 @@ func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Clien
 	}
 }
 
+// TranscribeAudio transcribes the audio file.
 func transcribeAudio(ctx context.Context, transcriber *whisper.Transcriber, filePath string) (string, error) {
 	// Transcribe the audio file.
 	transcript, err := transcriber.Transcribe(ctx, filePath)
 	if err != nil {
-		return "", fmt.Errorf("process audio failed during transcription: %w", err)
+		return "", fmt.Errorf("failed to transcribe audio: %w", err)
 	}
 
 	// Clean up the audio file.
 	if err := os.Remove(filePath); err != nil {
-		return "", fmt.Errorf("process audio failed during cleanup: %w", err)
+		return "", fmt.Errorf("failed to cleanup audio file: %w", err)
 	}
 
 	return transcript, nil
+}
+
+// ExecuteCommand sends the command to the executor.
+func executeCommand(_ context.Context, command string) error {
+	// If the command is "do_nothing", do nothing.
+	if command == "do_nothing" {
+		return nil
+	}
+
+	// Connect to the executor.
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%s", executorPort))
+	if err != nil {
+		return fmt.Errorf("failed to connect to executor: %w", err)
+	}
+	defer conn.Close()
+
+	// Send the command to the executor.
+	_, err = conn.Write([]byte(command))
+	if err != nil {
+		return fmt.Errorf("failed to send command to executor: %w", err)
+	}
+
+	return nil
 }

@@ -115,7 +115,7 @@ func (c *Combiner) stop(reason string) error {
 	return nil
 }
 
-// runWatcher watches for file changes and calls the handler when a new chunk is available.
+// RunWatcher watches for file changes and calls the handler when a new chunk is available.
 func (c *Combiner) runWatcher(ctx context.Context) {
 	for {
 		select {
@@ -143,7 +143,7 @@ func (c *Combiner) runWatcher(ctx context.Context) {
 	}
 }
 
-// handleWatcherEvent filters the events from the watcher and only handles chunk-related events.
+// HandleWatcherEvent filters the events from the watcher and only handles chunk-related events.
 func (c *Combiner) handleWatcherEvent(ctx context.Context, event fsnotify.Event) error {
 	// Only handle when a chunk is written to a file, that's when a chunk is complete.
 	// Don't handle when a chunk is created, because sometimes it doesn't have data yet.
@@ -163,7 +163,7 @@ func (c *Combiner) handleWatcherEvent(ctx context.Context, event fsnotify.Event)
 	return c.handleChunk(ctx, event.Name)
 }
 
-// handleChunk gets the current and previous chunks and combines them.
+// HandleChunk gets the current and previous chunks and combines them.
 func (c *Combiner) handleChunk(ctx context.Context, filename string) error {
 	// Extract the chunk index from the filename.
 	filenameParts := chunkRegex.FindStringSubmatch(filename)
@@ -203,7 +203,7 @@ func (c *Combiner) handleChunk(ctx context.Context, filename string) error {
 	return c.combineChunks(ctx, currChunkPath, prevChunkPath, combinedPath)
 }
 
-// combineChunks combines two chunks into a single file.
+// CombineChunks combines two chunks into a single file.
 func (c *Combiner) combineChunks(ctx context.Context, currChunkPath, prevChunkPath, combinedPath string) error {
 	// Concatenate the curr and prev chunks into a single file.
 	// If the previous chunk doesn't exist, fallback to using only the current chunk.

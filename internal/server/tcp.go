@@ -60,6 +60,7 @@ func (s *TCPServer) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop stops the TCP server.
 func (s *TCPServer) stop(reason string) error {
 	if s.listener == nil {
 		return fmt.Errorf("server not started")
@@ -78,6 +79,7 @@ func (s *TCPServer) stop(reason string) error {
 	return nil
 }
 
+// RunListener accepts connections and handles them.
 func (s *TCPServer) runListener(ctx context.Context, listener net.Listener) {
 	for {
 		select {
@@ -99,6 +101,7 @@ func (s *TCPServer) runListener(ctx context.Context, listener net.Listener) {
 	}
 }
 
+// HandleConnection retrieves the messages from the connection and processes them.
 func (s *TCPServer) handleConnection(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 
