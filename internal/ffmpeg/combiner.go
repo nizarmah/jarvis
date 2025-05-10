@@ -13,7 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// OnCombinedFunc is the callback for post-processing the merged file.
+// OnCombinedFunc is the callback for post-processing the combined file.
 type OnCombinedFunc func(ctx context.Context, filename string) error
 
 // CombinerConfig is the configuration for the combiner.
@@ -24,7 +24,7 @@ type CombinerConfig struct {
 	InputDir string
 	// OutputDir is the directory for the output file.
 	OutputDir string
-	// OnCombined is the callback for post-processing the merged file.
+	// OnCombined is the callback for post-processing the combined file.
 	OnCombined OnCombinedFunc
 }
 
@@ -188,36 +188,36 @@ func (c *Combiner) handleChunk(ctx context.Context, filename string) error {
 	currChunk := fmt.Sprintf(chunkPattern, chunkIndex)
 	prevChunk := fmt.Sprintf(chunkPattern, previousChunkIndex)
 
+	// Get the current and previous chunk paths.
+	currChunkPath := fmt.Sprintf("%s/%s", c.inputDir, currChunk)
+	prevChunkPath := fmt.Sprintf("%s/%s", c.inputDir, prevChunk)
+
+	// Create the combined filename and path.
+	combined := fmt.Sprintf(combinedPattern, time.Now().UnixNano())
+	combinedPath := filepath.Join(c.outputDir, combined)
+
 	if c.debug {
 		log.Println(fmt.Sprintf("handling chunk: %s, previous chunk: %s", currChunk, prevChunk))
 	}
 
-	return c.combineChunks(ctx, currChunk, prevChunk)
+	return c.combineChunks(ctx, currChunkPath, prevChunkPath, combinedPath)
 }
 
 // combineChunks combines two chunks into a single file.
-func (c *Combiner) combineChunks(ctx context.Context, currChunk, prevChunk string) error {
-	currChunkPath := fmt.Sprintf("%s/%s", c.inputDir, currChunk)
-	prevChunkPath := fmt.Sprintf("%s/%s", c.inputDir, prevChunk)
-
-	merged := fmt.Sprintf(mergedPattern, time.Now().UnixNano())
-	mergedPath := filepath.Join(c.outputDir, merged)
-
+func (c *Combiner) combineChunks(ctx context.Context, currChunkPath, prevChunkPath, combinedPath string) error {
 	// Concatenate the curr and prev chunks into a single file.
-	input := fmt.Sprintf("concat:%s|%s", currChunkPath, prevChunkPath)
-
 	// If the previous chunk doesn't exist, fallback to using only the current chunk.
 	// Eg. curr: `chunk_0.wav`, prev: `chunk_5.wav`, but it's the first chunk, so prev doesn't exist yet.
+	input := fmt.Sprintf("concat:%s|%s", prevChunkPath, currChunkPath)
 	if _, err := os.Stat(prevChunkPath); os.IsNotExist(err) {
 		input = currChunkPath
 	}
 
-	args := []string{
-		// Input file, either curr chunk or a concat of curr and prev chunks.
-		"-i", input,
-		// Output file.
-		"-c", "copy", mergedPath,
-	}
+	args := buildFfmpegArgs(
+		combinedFfmpegArgs,
+		[]string{"-i", input},
+		[]string{"-c", "copy", combinedPath},
+	)
 
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
 	if c.debug {
@@ -231,11 +231,11 @@ func (c *Combiner) combineChunks(ctx context.Context, currChunk, prevChunk strin
 	}
 
 	if c.debug {
-		log.Println(fmt.Sprintf("combined chunks: %s -> %s", input, mergedPath))
+		log.Println(fmt.Sprintf("combined chunks: %s -> %s", input, combinedPath))
 	}
 
-	if err := c.onCombined(ctx, mergedPath); err != nil {
-		return fmt.Errorf("failed to post-process merged file: %w", err)
+	if err := c.onCombined(ctx, combinedPath); err != nil {
+		return fmt.Errorf("failed to post-process combined file: %w", err)
 	}
 
 	return nil

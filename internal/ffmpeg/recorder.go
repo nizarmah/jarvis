@@ -46,7 +46,7 @@ func (r *Recorder) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start recorder: %w", err)
 	}
 
-	args, err := buildArgs(r.platform, r.outputDir)
+	args, err := buildRecorderArgs(r.platform, r.outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to build args: %w", err)
 	}
@@ -60,35 +60,18 @@ func (r *Recorder) Start(ctx context.Context) error {
 	return cmd.Start()
 }
 
-// buildArgs builds the arguments for the ffmpeg command.
-func buildArgs(p platform, outputDir string) ([]string, error) {
+// buildRecorderArgs builds the arguments for the ffmpeg command.
+func buildRecorderArgs(p platform, outputDir string) ([]string, error) {
 	inputArgs, err := inputDeviceArgs(p)
 	if err != nil {
 		return nil, err
 	}
 
-	commonArgs := []string{
-		// Use 16-bit signed little-endian PCM audio (raw, uncompressed)
-		"-acodec", "pcm_s16le",
-		// Sample rate: 16 kHz (recommended for Whisper)
-		"-ar", "16000",
-		// Mono audio (1 channel)
-		"-ac", "1",
-		// Enable segmenting the output into separate files
-		"-f", "segment",
-		// Each segment/file is 2 seconds long
-		"-segment_time", fmt.Sprintf("%d", chunkDuration),
-		// Use the WAV container format for each file
-		"-segment_format", chunkFormat,
-		// Only keep the last 6 files (chunk_0.wav to chunk_5.wav)
-		"-segment_wrap", fmt.Sprintf("%d", chunkWrap),
-		// Restart timestamps at 0 for each segment (avoids time drift)
-		"-reset_timestamps", "1",
-		// Output pattern (chunk_0.wav, chunk_1.wav, ...)
-		fmt.Sprintf("%s/%s", outputDir, chunkPattern),
-	}
-
-	return append(inputArgs, commonArgs...), nil
+	return buildFfmpegArgs(
+		chunkFfmpegArgs,
+		inputArgs,
+		[]string{fmt.Sprintf("%s/%s", outputDir, chunkPattern)},
+	), nil
 }
 
 // inputDeviceArgs returns the input device arguments for the platform.

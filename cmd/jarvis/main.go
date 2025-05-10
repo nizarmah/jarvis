@@ -12,11 +12,14 @@ import (
 )
 
 const (
-	debug = false
+	recorderDebug = false
+	combinerDebug = false
+)
 
-	ffmpegPlatform  = ffmpeg.PlatformMac
-	ffmpegChunksDir = "artifacts/audio_chunks"
-	ffmpegMergedDir = "artifacts/audio_merged"
+const (
+	ffmpegPlatform    = ffmpeg.PlatformMac
+	ffmpegChunksDir   = "artifacts/audio_chunks"
+	ffmpegCombinedDir = "artifacts/audio_combined"
 )
 
 func main() {
@@ -29,7 +32,7 @@ func main() {
 
 	// Initialize the recorder.
 	recorder, err := ffmpeg.NewRecorder(ffmpeg.RecorderConfig{
-		Debug:     debug,
+		Debug:     recorderDebug,
 		Platform:  ffmpegPlatform,
 		OutputDir: ffmpegChunksDir,
 	})
@@ -39,9 +42,9 @@ func main() {
 
 	// Initialize the combiner.
 	combiner, err := ffmpeg.NewCombiner(ffmpeg.CombinerConfig{
-		Debug:      true,
+		Debug:      combinerDebug,
 		InputDir:   ffmpegChunksDir,
-		OutputDir:  ffmpegMergedDir,
+		OutputDir:  ffmpegCombinedDir,
 		OnCombined: onCombined,
 	})
 	if err != nil {
