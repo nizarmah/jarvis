@@ -21,7 +21,7 @@ const (
 // Chunk constants.
 const (
 	// chunkDuration is the duration of each ffmpeg chunk.
-	chunkDuration = 2
+	chunkDuration = 3
 	// chunkFormat is the format of each ffmpeg chunk.
 	// We use aac because ffmpeg `concat:` only supports mp3 and aac, and in our case aac is better.
 	// We can use ffmpeg `filter_complex` but it's slower, and `-f concat` requires a file list `list.txt`.
