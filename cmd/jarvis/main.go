@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os/signal"
 	"syscall"
@@ -11,9 +12,11 @@ import (
 )
 
 const (
-	ffmpegDebug     = false
+	debug = false
+
 	ffmpegPlatform  = ffmpeg.PlatformMac
-	ffmpegOutputDir = "artifacts/audio_chunks"
+	ffmpegChunksDir = "artifacts/audio_chunks"
+	ffmpegMergedDir = "artifacts/audio_merged"
 )
 
 func main() {
@@ -25,17 +28,34 @@ func main() {
 	defer cancel()
 
 	// Initialize the recorder.
-	rec, err := ffmpeg.NewRecorder(ffmpeg.Options{
-		Debug:     ffmpegDebug,
+	recorder, err := ffmpeg.NewRecorder(ffmpeg.RecorderConfig{
+		Debug:     debug,
 		Platform:  ffmpegPlatform,
-		OutputDir: ffmpegOutputDir,
+		OutputDir: ffmpegChunksDir,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Initialize the combiner.
+	combiner, err := ffmpeg.NewCombiner(ffmpeg.CombinerConfig{
+		Debug:      true,
+		InputDir:   ffmpegChunksDir,
+		OutputDir:  ffmpegMergedDir,
+		OnCombined: onCombined,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Start the combiner in context so it is auto-stopped.
+	// We start the combiner first so it can start watching the chunks dir.
+	if err := combiner.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+
 	// Start the recorder in context so it is auto-stopped.
-	if err := rec.Start(ctx); err != nil {
+	if err := recorder.Start(ctx); err != nil {
 		log.Fatal(err)
 	}
 
@@ -49,4 +69,9 @@ func main() {
 	// Wait for Ctrl+C or kill from context.
 	<-ctx.Done()
 	log.Println("Context cancelled — exiting.")
+}
+
+func onCombined(_ context.Context, filename string) error {
+	log.Println(fmt.Sprintf("on combined: %s", filename))
+	return nil
 }

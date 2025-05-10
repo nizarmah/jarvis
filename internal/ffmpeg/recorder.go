@@ -8,19 +8,8 @@ import (
 	"os/exec"
 )
 
-type platform string
-
-const (
-	// PlatformMac is the platform for macOS.
-	PlatformMac platform = "mac"
-	// PlatformLinux is the platform for Linux.
-	PlatformLinux platform = "linux"
-	// PlatformWindows is the platform for Windows.
-	PlatformWindows platform = "windows"
-)
-
-// Options for the recorder.
-type Options struct {
+// RecorderConfig is the configuration for the recorder.
+type RecorderConfig struct {
 	// Debug enables logging during ffmpeg command execution.
 	Debug bool
 	// Platform is the platform for the recorder.
@@ -31,36 +20,35 @@ type Options struct {
 
 // Recorder is a rolling recorder for audio chunks.
 type Recorder struct {
-	cmd       *exec.Cmd
 	debug     bool
 	outputDir string
 	platform  platform
 }
 
 // NewRecorder initializes the recorder.
-func NewRecorder(opts Options) (*Recorder, error) {
-	switch opts.Platform {
+func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
+	switch cfg.Platform {
 	case PlatformMac, PlatformLinux, PlatformWindows:
 		return &Recorder{
-			debug:     opts.Debug,
-			outputDir: opts.OutputDir,
-			platform:  opts.Platform,
+			debug:     cfg.Debug,
+			outputDir: cfg.OutputDir,
+			platform:  cfg.Platform,
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported platform: %q", opts.Platform)
+		return nil, fmt.Errorf("unsupported platform: %q", cfg.Platform)
 	}
 }
 
 // Start starts a rolling recorder using ffmpeg.
 func (r *Recorder) Start(ctx context.Context) error {
-	if err := createOutputDirIfNotExists(r.outputDir); err != nil {
+	if err := createDirIfNotExists(r.outputDir); err != nil {
 		return fmt.Errorf("failed to start recorder: %w", err)
 	}
 
 	args, err := buildArgs(r.platform, r.outputDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build args: %w", err)
 	}
 
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
@@ -69,29 +57,10 @@ func (r *Recorder) Start(ctx context.Context) error {
 		cmd.Stderr = os.Stderr
 	}
 
-	// Store the command for future use.
-	r.cmd = cmd
-
 	return cmd.Start()
 }
 
-// Stop stops the rolling recorder.
-func (r *Recorder) Stop() error {
-	if r.cmd == nil || r.cmd.Process == nil {
-		return nil
-	}
-
-	return r.cmd.Process.Kill()
-}
-
-func createOutputDirIfNotExists(dir string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create output dir: %w", err)
-	}
-
-	return nil
-}
-
+// buildArgs builds the arguments for the ffmpeg command.
 func buildArgs(p platform, outputDir string) ([]string, error) {
 	inputArgs, err := inputDeviceArgs(p)
 	if err != nil {
@@ -108,20 +77,21 @@ func buildArgs(p platform, outputDir string) ([]string, error) {
 		// Enable segmenting the output into separate files
 		"-f", "segment",
 		// Each segment/file is 2 seconds long
-		"-segment_time", "2",
+		"-segment_time", fmt.Sprintf("%d", chunkDuration),
 		// Use the WAV container format for each file
-		"-segment_format", "wav",
+		"-segment_format", chunkFormat,
 		// Only keep the last 6 files (chunk_0.wav to chunk_5.wav)
-		"-segment_wrap", "6",
+		"-segment_wrap", fmt.Sprintf("%d", chunkWrap),
 		// Restart timestamps at 0 for each segment (avoids time drift)
 		"-reset_timestamps", "1",
 		// Output pattern (chunk_0.wav, chunk_1.wav, ...)
-		fmt.Sprintf("%s/chunk_%%d.wav", outputDir),
+		fmt.Sprintf("%s/%s", outputDir, chunkPattern),
 	}
 
 	return append(inputArgs, commonArgs...), nil
 }
 
+// inputDeviceArgs returns the input device arguments for the platform.
 func inputDeviceArgs(p platform) ([]string, error) {
 	switch p {
 	case PlatformMac:
