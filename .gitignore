@@ -27,4 +27,5 @@
 
 !internal
 !internal/ffmpeg
+!internal/ollama
 !internal/whisper

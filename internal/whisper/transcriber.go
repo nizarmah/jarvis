@@ -55,7 +55,7 @@ func (t *Transcriber) Transcribe(ctx context.Context, filePath string) (string, 
 	}
 
 	// Read the transcription file.
-	transcription, err := os.ReadFile(transcriptionPath)
+	untrimmedTranscript, err := os.ReadFile(transcriptionPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read transcription file: %w", err)
 	}
@@ -65,7 +65,9 @@ func (t *Transcriber) Transcribe(ctx context.Context, filePath string) (string, 
 		return "", fmt.Errorf("failed to delete transcription file: %w", err)
 	}
 
-	return string(transcription), nil
+	transcript := strings.TrimSpace(string(untrimmedTranscript))
+
+	return transcript, nil
 }
 
 // doTranscription transcribes the audio using the whisper service and returns the transcription file path.

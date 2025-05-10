@@ -8,25 +8,58 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/nizarmah/jarvis/internal/ffmpeg"
+	"github.com/nizarmah/jarvis/internal/ollama"
 	"github.com/nizarmah/jarvis/internal/whisper"
 )
 
 const (
-	transcriberDebug = false
-	recorderDebug    = false
-	combinerDebug    = false
-)
-
-const (
+	recorderDebug     = false
+	combinerDebug     = false
 	ffmpegPlatform    = ffmpeg.PlatformMac
 	ffmpegChunksDir   = "artifacts/audio/chunks"
 	ffmpegCombinedDir = "artifacts/audio/combined"
 )
 
 const (
+	transcriberDebug = false
 	whisperOutputDir = "artifacts/audio/transcripts"
+)
+
+const (
+	ollamaDebug = true
+	// Mistral is good at following instructions.
+	ollamaModel = "mistral"
+	// Timeout after 5 seconds to avoid hallucinations.
+	ollamaTimeout = 5 * time.Second
+	ollamaURL     = "http://localhost:11434"
+)
+
+const (
+	promptTemplate = `You are Jarvis, a voice assistant that listens to noisy voice transcripts.
+	Your job is to detect whether the user is calling you, and whether they are giving you a valid command.
+
+	The transcript may contain errors or mispronunciations.
+	Users might call you "Jarvis", "Jarmis", "Jarvez", "Germous", or similar variations.
+
+	Only respond with a valid command if BOTH of the following are true:
+	1. The assistant (you) was clearly addressed — even with a mispronounced name.
+	2. One of the following commands was clearly intended:
+		- pause_video
+		- play_video
+		- skip_ad
+
+	If both are true, respond with the correct command (exactly as written above).
+	If at least one is false, respond with:
+		- do_nothing
+
+	Respond with ONE WORD only.
+
+	Transcript: %q
+
+	Command:`
 )
 
 func main() {
@@ -36,6 +69,14 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL,
 	)
 	defer cancel()
+
+	// Initialize the ollama client.
+	ollama := ollama.NewClient(ollama.ClientConfig{
+		Debug:   ollamaDebug,
+		Model:   ollamaModel,
+		Timeout: ollamaTimeout,
+		URL:     ollamaURL,
+	})
 
 	// Initialize the transcriber.
 	transcriber, err := whisper.NewTranscriber(ctx, whisper.TranscriberConfig{
@@ -58,12 +99,10 @@ func main() {
 
 	// Initialize the combiner.
 	combiner, err := ffmpeg.NewCombiner(ffmpeg.CombinerConfig{
-		Debug:     combinerDebug,
-		InputDir:  ffmpegChunksDir,
-		OutputDir: ffmpegCombinedDir,
-		OnCombined: func(ctx context.Context, filePath string) error {
-			return processAudio(ctx, transcriber, filePath)
-		},
+		Debug:      combinerDebug,
+		InputDir:   ffmpegChunksDir,
+		OutputDir:  ffmpegCombinedDir,
+		OnCombined: createAudioProcessor(transcriber, ollama),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -92,19 +131,46 @@ func main() {
 	log.Println("Context cancelled — exiting.")
 }
 
-func processAudio(ctx context.Context, transcriber *whisper.Transcriber, filePath string) error {
+func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Client) ffmpeg.OnCombinedFunc {
+	return func(ctx context.Context, filePath string) error {
+		// Transcribe the audio file.
+		transcript, err := transcribeAudio(ctx, transcriber, filePath)
+		if err != nil {
+			return err
+		}
+
+		// Build a prompt to instruct LLM.
+		prompt := fmt.Sprintf(promptTemplate, transcript)
+
+		log.Println(fmt.Sprintf("prompt: %s", prompt))
+
+		// Prompt the LLM.
+		cmd, err := ollama.Prompt(ctx, prompt)
+		if err != nil {
+			return err
+		}
+
+		log.Println(fmt.Sprintf("command: %s", cmd))
+
+		if ollamaDebug {
+			log.Println(fmt.Sprintf("transcript: %s, command: %s", transcript, cmd))
+		}
+
+		return nil
+	}
+}
+
+func transcribeAudio(ctx context.Context, transcriber *whisper.Transcriber, filePath string) (string, error) {
 	// Transcribe the audio file.
-	transcription, err := transcriber.Transcribe(ctx, filePath)
+	transcript, err := transcriber.Transcribe(ctx, filePath)
 	if err != nil {
-		return fmt.Errorf("process audio failed during transcription: %w", err)
+		return "", fmt.Errorf("process audio failed during transcription: %w", err)
 	}
 
 	// Clean up the audio file.
 	if err := os.Remove(filePath); err != nil {
-		return fmt.Errorf("process audio failed during cleanup: %w", err)
+		return "", fmt.Errorf("process audio failed during cleanup: %w", err)
 	}
 
-	log.Println(fmt.Sprintf("processed audio: %s", transcription))
-
-	return nil
+	return transcript, nil
 }
