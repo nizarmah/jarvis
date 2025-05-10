@@ -1,24 +1,28 @@
 # ollama
 
-Docker client for [Ollama](https://github.com/ollama/ollama).
+Instructions for [Ollama](https://github.com/ollama/ollama).
 
 ## Usage
+
+### Install
+
+Follow the [official docs](https://github.com/ollama/ollama/tree/main/docs).
 
 ### Setup
 
 ```bash
-# From the repo root directory
-docker compose build ollama
-docker compose up ollama -d
+# Start ollama
+ollama serve
 
-# Preload the model into the image.
-docker compose exec ollama ollama pull tinyllama
+# Pull the model
+ollama pull llama3
 ```
 
 ### Run
 
 ```bash
+# Pre-load the model, since ollama lazy-loads it
 curl -X POST http://localhost:11434/api/generate \
     -H "Content-Type: application/json" \
-    -d '{"model": "tinyllama", "stream": false, "prompt": "Reply with one word. Hello."}'
+    -d '{"model": "mistral", "stream": false, "prompt": "Reply with one word. Hello."}'
 ```
