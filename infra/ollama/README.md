@@ -24,5 +24,5 @@ ollama pull llama3
 # Pre-load the model, since ollama lazy-loads it
 curl -X POST http://localhost:11434/api/generate \
     -H "Content-Type: application/json" \
-    -d '{"model": "mistral", "stream": false, "prompt": "Reply with one word. Hello."}'
+    -d '{"model": "llama3", "stream": false, "prompt": "Reply with one word. Hello."}'
 ```
