@@ -17,13 +17,24 @@ None.
 
 ### Run
 
+Run the listener and executor in separate terminals.
+
+#### Listener
+
 ```bash
 # From the repo root directory
-go run cmd/jarvis/main.go
+go run cmd/listener/main.go
+```
+
+#### Executor
+
+```bash
+# From the repo root directory
+go run cmd/executor/main.go
 ```
 
 ## Development
 
 ### Debug
 
-Enable debug in [`cmd/jarvis/main.go`](cmd/jarvis/main.go) and run as you normally would.
+Enable debug in the `main.go` files and run as you normally would.

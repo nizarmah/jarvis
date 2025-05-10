@@ -1,4 +1,4 @@
-// Package main is the entry point for jarvis.
+// Package main is the entry point for listener.
 package main
 
 import (

@@ -19,7 +19,8 @@
 !artifacts/samples/*.wav
 
 !cmd
-!cmd/jarvis
+!cmd/listener
+!cmd/executor
 
 !infra
 !infra/ollama
