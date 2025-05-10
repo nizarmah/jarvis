@@ -21,12 +21,12 @@ const (
 
 const (
 	ffmpegPlatform    = ffmpeg.PlatformMac
-	ffmpegChunksDir   = "artifacts/audio_chunks"
-	ffmpegCombinedDir = "artifacts/audio_combined"
+	ffmpegChunksDir   = "artifacts/audio/chunks"
+	ffmpegCombinedDir = "artifacts/audio/combined"
 )
 
 const (
-	whisperOutputDir = "artifacts/audio_transcripts"
+	whisperOutputDir = "artifacts/audio/transcripts"
 )
 
 func main() {
