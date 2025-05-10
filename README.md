@@ -13,6 +13,7 @@ None.
 ### Setup
 
 1. Start [whisper](infra/whisper/README.md).
+1. Start [ollama](infra/ollama/README.md).
 
 ### Run
 
