@@ -29,4 +29,5 @@
 !internal
 !internal/ffmpeg
 !internal/ollama
+!internal/server
 !internal/whisper

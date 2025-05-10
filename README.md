@@ -38,3 +38,17 @@ go run cmd/executor/main.go
 ### Debug
 
 Enable debug in the `main.go` files and run as you normally would.
+
+### Testing
+
+#### Listener
+
+Just start the listener, and talk to it.
+
+#### Executor
+
+Send the command through TCP.
+
+```bash
+echo "skip_ad" | nc 127.0.0.1 4242
+```
