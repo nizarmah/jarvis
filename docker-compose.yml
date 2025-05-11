@@ -9,5 +9,4 @@ services:
       - whisper-data:/root/.cache/whisper
 
 volumes:
-  ollama-data:
   whisper-data:

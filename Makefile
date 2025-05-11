@@ -46,11 +46,7 @@ infra-whisper:
 	@docker compose build whisper
 	@echo "Starting whisper container..."
 	@docker compose up whisper -d
-	@echo "Pre-loading whisper model..."
-	@docker compose exec whisper download-model $(WHISPER_MODEL)
-	@echo "Pre-loading whisper language..."
-	@docker compose exec whisper download-language $(WHISPER_LANGUAGE)
-	@echo "Testing whisper container..."
+	@echo "Pre-loading whisper model and language..."
 	@docker compose exec whisper \
 		whisper \
 		--model $(WHISPER_MODEL) \
