@@ -24,15 +24,21 @@ var (
 )
 
 var (
-	promptTemplate = fmt.Sprintf(
-		("You are Jarvis, a chat assistant. " +
-			"You will receive messages, often auto-corrected. " +
-			"Try to understand the user's intent and respond with a valid command. " +
-			"If you cannot understand the user's intent, respond with: do_nothing " +
-			"The valid commands are: %s " +
-			"The user's message is: %%q " +
-			"Command: "),
-		strings.Join(executor.Commands, ", "),
+	transcribePromptTemplate = fmt.Sprintf(
+		("You are Jarvis, a voice assistant." +
+			" Users give you instructions like: %s"),
+		strings.Join(executor.Instructions, " OR "),
+	)
+
+	interpretPromptTemplate = fmt.Sprintf(
+		("You are Jarvis, a chat assistant." +
+			" Interpret the distorted message." +
+			" If it's not directed to you, return: not_for_me" +
+			" Distorted messages are originally instructions like: %s" +
+			" Don't return text, just one of these commands: %s OR do_nothing" +
+			" Distorted Message: %%q"),
+		strings.Join(executor.Instructions, " OR "),
+		strings.Join(executor.Commands, " OR "),
 	)
 )
 
@@ -73,6 +79,7 @@ func main() {
 		Model:     e.WhisperModel,
 		Language:  e.WhisperLanguage,
 		OutputDir: e.WhisperOutputDir,
+		Prompt:    transcribePromptTemplate,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -151,9 +158,9 @@ func createAudioProcessor(
 		}
 
 		// Check if the transcript has the wake up word.
-		if !hasWakeUpWord(transcript) {
-			return nil
-		}
+		// if !hasWakeUpWord(transcript) {
+		// 	return nil
+		// }
 
 		// Extract the command from the transcript.
 		cmd, err := interpretCommand(ctx, interpreter, transcript)
@@ -225,7 +232,7 @@ func interpretCommand(
 	transcript string,
 ) (string, error) {
 	// Build a prompt to instruct LLM.
-	prompt := fmt.Sprintf(promptTemplate, transcript)
+	prompt := fmt.Sprintf(interpretPromptTemplate, transcript)
 
 	// Prompt the LLM.
 	response, err := interpreter.Prompt(ctx, prompt)
@@ -237,6 +244,8 @@ func interpretCommand(
 
 		return "", fmt.Errorf("failed to prompt LLM: %w", err)
 	}
+
+	log.Println(fmt.Sprintf("response: %s", response))
 
 	// Search for the command in the response.
 	for _, command := range executor.Commands {

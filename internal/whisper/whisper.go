@@ -22,6 +22,8 @@ type ClientConfig struct {
 	Language string
 	// OutputDir is the directory to output the results to.
 	OutputDir string
+	// Prompt is the prompt to use for the transcription.
+	Prompt string
 }
 
 // Client is a client for the whisper service.
@@ -30,6 +32,7 @@ type Client struct {
 	model     string
 	language  string
 	outputDir string
+	prompt    string
 }
 
 // NewClient creates a new Client.
@@ -52,6 +55,7 @@ func NewClient(ctx context.Context, cfg ClientConfig) (*Client, error) {
 		model:     cfg.Model,
 		language:  cfg.Language,
 		outputDir: cfg.OutputDir,
+		prompt:    cfg.Prompt,
 	}, nil
 }
 
@@ -93,6 +97,10 @@ func (t *Client) doTranscription(ctx context.Context, filePath string) (string, 
 		"--output_format", "txt",
 		// Output the results to the specified directory.
 		"--output_dir", t.outputDir,
+		// Specify the prompt to use for the transcription.
+		"--initial_prompt", t.prompt,
+		// Specify the task to use for the transcription.
+		"--task", "transcribe",
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)

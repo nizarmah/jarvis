@@ -6,9 +6,10 @@ var (
 		"pause_video",
 		"play_video",
 	}
-	// CommandsHumanReadable is the human readable version of the commands.
-	CommandsHumanReadable = map[string]string{
-		"pause_video": "pause the YouTube video",
-		"play_video":  "play the YouTube video",
+
+	// Instructions is the list of instructions that the executor can execute.
+	Instructions = []string{
+		"Play the YouTube video",
+		"Pause the YouTube video",
 	}
 )
