@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 )
 
 // Env holds relevant env variables.
@@ -19,7 +18,6 @@ type Env struct {
 	MessageHandlerDebug bool
 	OllamaDebug         bool
 	OllamaModel         string
-	OllamaTimeout       time.Duration
 	OllamaURL           string
 	RecorderChunkNum    int
 	RecorderChunkSize   int
@@ -79,11 +77,6 @@ func Init() (*Env, error) {
 	}
 
 	env.OllamaModel, err = lookup("OLLAMA_MODEL")
-	if err != nil {
-		return nil, err
-	}
-
-	env.OllamaTimeout, err = lookupDuration("OLLAMA_TIMEOUT", time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -164,14 +157,4 @@ func lookupInt(s string) (int, error) {
 	}
 
 	return strconv.Atoi(value)
-}
-
-// lookupDuration helps verifying an env var exists and casts its value as time.Duration.
-func lookupDuration(s string, unitTime time.Duration) (time.Duration, error) {
-	value, err := lookupInt(s)
-	if err != nil {
-		return 0, err
-	}
-
-	return time.Duration(value) * unitTime, nil
 }

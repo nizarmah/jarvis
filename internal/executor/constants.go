@@ -9,7 +9,7 @@ var (
 
 	// Instructions is the list of instructions that the executor can execute.
 	Instructions = []string{
-		"Play the YouTube video",
-		"Pause the YouTube video",
+		"play the video",
+		"pause the video",
 	}
 )

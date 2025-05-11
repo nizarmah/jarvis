@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // ClientConfig is the configuration for the Ollama client.
@@ -18,18 +17,15 @@ type ClientConfig struct {
 	Debug bool
 	// Model is the name of the model to use.
 	Model string
-	// Timeout is the timeout for the LLM request.
-	Timeout time.Duration
 	// URL is the URL of the Ollama server.
 	URL string
 }
 
 // Client is a client for the Ollama API.
 type Client struct {
-	debug   bool
-	model   string
-	url     string
-	timeout time.Duration
+	debug bool
+	model string
+	url   string
 }
 
 // GenerateInput is the input for the generate endpoint.
@@ -47,25 +43,21 @@ type generateResult struct {
 // NewClient creates a new Ollama client with default config.
 func NewClient(cfg ClientConfig) *Client {
 	return &Client{
-		debug:   cfg.Debug,
-		model:   cfg.Model,
-		url:     cfg.URL,
-		timeout: cfg.Timeout,
+		debug: cfg.Debug,
+		model: cfg.Model,
+		url:   cfg.URL,
 	}
 }
 
 // Prompt sends a prompt to the LLM and returns the response.
 func (c *Client) Prompt(ctx context.Context, prompt string) (string, error) {
-	client := &http.Client{
-		Timeout: c.timeout,
-	}
-
 	req, err := c.buildGenerateRequest(ctx, generateInput{
 		Model:  c.model,
 		Prompt: prompt,
 		Stream: false,
 	})
 
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("ollama request failed: %w", err)
@@ -104,8 +96,6 @@ func (c *Client) buildGenerateRequest(ctx context.Context, input generateInput) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
-	req.Header.Set("Content-Type", "application/json")
 
 	return req, nil
 }

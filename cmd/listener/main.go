@@ -24,20 +24,17 @@ var (
 )
 
 var (
+	// TranscribePromptTemplate is the prompt used on Whisper.
 	transcribePromptTemplate = fmt.Sprintf(
-		("You are Jarvis, a voice assistant." +
-			" Users give you instructions like: %s"),
+		"Possible results: nothing OR %s.",
 		strings.Join(executor.Instructions, " OR "),
 	)
 
+	// InterpretPromptTemplate is the prompt used on Ollama.
 	interpretPromptTemplate = fmt.Sprintf(
-		("You are Jarvis, a chat assistant." +
-			" Interpret the distorted message." +
-			" If it's not directed to you, return: not_for_me" +
-			" Distorted messages are originally instructions like: %s" +
-			" Don't return text, just one of these commands: %s OR do_nothing" +
-			" Distorted Message: %%q"),
-		strings.Join(executor.Instructions, " OR "),
+		("You're Jarvis. Distorted message: %%q." +
+			" Reply with only one word, no other text." +
+			" Possible results: do_nothing OR %s."),
 		strings.Join(executor.Commands, " OR "),
 	)
 )
@@ -67,10 +64,9 @@ func main() {
 
 	// Initialize the ollama client.
 	interpreter := ollama.NewClient(ollama.ClientConfig{
-		Debug:   e.OllamaDebug,
-		Model:   e.OllamaModel,
-		Timeout: e.OllamaTimeout,
-		URL:     e.OllamaURL,
+		Debug: e.OllamaDebug,
+		Model: e.OllamaModel,
+		URL:   e.OllamaURL,
 	})
 
 	// Initialize the whisper client.
@@ -172,13 +168,13 @@ func createAudioProcessor(
 			return fmt.Errorf("failed to extract command: %w", err)
 		}
 
+		if e.AudioProcessorDebug {
+			log.Println(fmt.Sprintf("command: %s", cmd))
+		}
+
 		// If the command is empty, do nothing.
 		if cmd == "" {
 			return nil
-		}
-
-		if e.AudioProcessorDebug {
-			log.Println(fmt.Sprintf("command: %s", cmd))
 		}
 
 		// Execute the command.
@@ -237,6 +233,8 @@ func interpretCommand(
 	// Prompt the LLM.
 	response, err := interpreter.Prompt(ctx, prompt)
 	if err != nil {
+		log.Println(fmt.Sprintf("failed to prompt LLM: %s", err))
+
 		// Ignore the error if the context was cancelled.
 		if errors.Is(err, context.DeadlineExceeded) {
 			return "", nil

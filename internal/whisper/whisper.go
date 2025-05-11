@@ -42,6 +42,14 @@ func NewClient(ctx context.Context, cfg ClientConfig) (*Client, error) {
 		return nil, err
 	}
 
+	if cfg.Model == "" {
+		return nil, fmt.Errorf("model is required")
+	}
+
+	if cfg.Language == "" {
+		return nil, fmt.Errorf("language is required")
+	}
+
 	if cfg.OutputDir == "" {
 		return nil, fmt.Errorf("output directory is required")
 	}
@@ -97,10 +105,10 @@ func (t *Client) doTranscription(ctx context.Context, filePath string) (string, 
 		"--output_format", "txt",
 		// Output the results to the specified directory.
 		"--output_dir", t.outputDir,
-		// Specify the prompt to use for the transcription.
-		"--initial_prompt", t.prompt,
-		// Specify the task to use for the transcription.
-		"--task", "transcribe",
+	}
+
+	if t.prompt != "" {
+		args = append(args, "--initial_prompt", t.prompt)
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
