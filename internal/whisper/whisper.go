@@ -97,6 +97,8 @@ func (t *Client) doTranscription(ctx context.Context, filePath string) (string, 
 		"compose", "exec", "-T", "whisper",
 		// Transcribe the audio file.
 		"whisper", filePath,
+		// Do not carry over the context.
+		"--condition_on_previous_text", "False",
 		// Specify the model to use.
 		"--model", t.model,
 		// Specify the language to use.
