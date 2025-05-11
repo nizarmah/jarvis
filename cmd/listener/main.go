@@ -158,6 +158,10 @@ func createAudioProcessor(
 		// Extract the command from the transcript.
 		cmd, err := interpretCommand(ctx, interpreter, transcript)
 		if err != nil {
+			if e.AudioProcessorDebug {
+				log.Println(fmt.Sprintf("failed to extract command: %s", err))
+			}
+
 			return fmt.Errorf("failed to extract command: %w", err)
 		}
 
@@ -172,6 +176,10 @@ func createAudioProcessor(
 
 		// Execute the command.
 		if err := executor.SendCommand(ctx, cmd); err != nil {
+			if e.AudioProcessorDebug {
+				log.Println(fmt.Sprintf("failed to send command to executor: %s", err))
+			}
+
 			return fmt.Errorf("failed to send command to executor: %w", err)
 		}
 
