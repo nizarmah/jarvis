@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 )
@@ -77,9 +76,6 @@ func (c *Client) Prompt(ctx context.Context, prompt string) (string, error) {
 	}
 
 	result := parsed.Response
-	if c.debug {
-		log.Println(fmt.Sprintf("prompt: %s, response: %s", prompt, result))
-	}
 
 	return result, nil
 }

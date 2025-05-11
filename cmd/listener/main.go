@@ -35,9 +35,9 @@ const (
 
 const (
 	ollamaDebug = false
-	// Llama3 is good at following instructions and extracting commands.
+	// TinyLlama sucks following instructions but is lightweight.
 	// Also, it runs well with Whisper and FFmpeg on my 8GB laptop.
-	ollamaModel = "llama3"
+	ollamaModel = "tinyllama"
 	// Timeout after 5 seconds to avoid hallucinations.
 	ollamaTimeout = 5 * time.Second
 	ollamaURL     = "http://localhost:11434"
