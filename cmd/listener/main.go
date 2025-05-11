@@ -60,15 +60,15 @@ func main() {
 	}
 
 	// Initialize the ollama client.
-	ollama := ollama.NewClient(ollama.ClientConfig{
+	interpreter := ollama.NewClient(ollama.ClientConfig{
 		Debug:   e.OllamaDebug,
 		Model:   e.OllamaModel,
 		Timeout: e.OllamaTimeout,
 		URL:     e.OllamaURL,
 	})
 
-	// Initialize the transcriber.
-	transcriber, err := whisper.NewTranscriber(ctx, whisper.TranscriberConfig{
+	// Initialize the whisper client.
+	transcriber, err := whisper.NewClient(ctx, whisper.ClientConfig{
 		Debug:     e.TranscriberDebug,
 		OutputDir: e.TranscriberOutputDir,
 	})
@@ -91,7 +91,7 @@ func main() {
 		Debug:      e.CombinerDebug,
 		InputDir:   e.RecorderOutputDir,
 		OutputDir:  e.CombinerOutputDir,
-		OnCombined: createAudioProcessor(e, transcriber, ollama, executor),
+		OnCombined: createAudioProcessor(e, transcriber, interpreter, executor),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -125,8 +125,8 @@ func main() {
 // CreateAudioProcessor creates a function that transcribes the audio file and extracts the command.
 func createAudioProcessor(
 	e *env.Env,
-	transcriber *whisper.Transcriber,
-	ollama *ollama.Client,
+	transcriber *whisper.Client,
+	interpreter *ollama.Client,
 	executor *executor.Client,
 ) ffmpeg.OnCombinedFunc {
 	return func(ctx context.Context, filePath string) error {
@@ -151,7 +151,7 @@ func createAudioProcessor(
 		}
 
 		// Extract the command from the transcript.
-		cmd, err := extractCommand(ctx, ollama, transcript)
+		cmd, err := interpretCommand(ctx, interpreter, transcript)
 		if err != nil {
 			return fmt.Errorf("failed to extract command: %w", err)
 		}
@@ -175,7 +175,11 @@ func createAudioProcessor(
 }
 
 // TranscribeAudio transcribes the audio file.
-func transcribeAudio(ctx context.Context, transcriber *whisper.Transcriber, filePath string) (string, error) {
+func transcribeAudio(
+	ctx context.Context,
+	transcriber *whisper.Client,
+	filePath string,
+) (string, error) {
 	// Transcribe the audio file.
 	untrimmed, err := transcriber.Transcribe(ctx, filePath)
 	if err != nil {
@@ -201,13 +205,17 @@ func hasWakeUpWord(transcript string) bool {
 	return strings.Contains(transcript, wakeUpWord)
 }
 
-// ExtractCommand extracts the command from the transcript.
-func extractCommand(ctx context.Context, ollama *ollama.Client, transcript string) (string, error) {
+// InterpretCommand interprets the command from the transcript.
+func interpretCommand(
+	ctx context.Context,
+	interpreter *ollama.Client,
+	transcript string,
+) (string, error) {
 	// Build a prompt to instruct LLM.
 	prompt := fmt.Sprintf(promptTemplate, transcript)
 
 	// Prompt the LLM.
-	response, err := ollama.Prompt(ctx, prompt)
+	response, err := interpreter.Prompt(ctx, prompt)
 	if err != nil {
 		// Ignore the error if the context was cancelled.
 		if errors.Is(err, context.DeadlineExceeded) {

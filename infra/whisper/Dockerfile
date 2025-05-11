@@ -14,8 +14,5 @@ RUN pip install --no-cache-dir setuptools-rust
 # Install Whisper.
 RUN pip install --no-cache-dir openai-whisper
 
-# Pre-download models.
-RUN whisper --model tiny.en --output_format txt /dev/null || true
-
 # Keep container alive.
 CMD ["tail", "-f", "/dev/null"]

@@ -1,28 +1,18 @@
 # ollama
 
-Instructions for [Ollama](https://github.com/ollama/ollama).
+We use [ollama](https://github.com/ollama/ollama) to convert audio transcripts to commands, even if the transcript is not perfect.
 
-## Usage
-
-### Install
+## Install
 
 Follow the [official docs](https://github.com/ollama/ollama/tree/main/docs).
 
-### Setup
+## Environment
+
+If you haven't already, setup the environment file.
+
+## Setup
 
 ```bash
-# Start ollama
-ollama serve
-
-# Pull the model
-ollama pull tinyllama
-```
-
-### Run
-
-```bash
-# Pre-load the model, since ollama lazy-loads it
-curl -X POST http://localhost:11434/api/generate \
-    -H "Content-Type: application/json" \
-    -d '{"model": "tinyllama", "stream": false, "prompt": "Reply with one word. Hello."}'
+# From the repo root directory
+make infra-ollama
 ```

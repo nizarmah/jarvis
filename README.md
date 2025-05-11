@@ -6,49 +6,46 @@ It's pathetic, but helpful while I'm doing the dishes.
 
 ## Capabilities
 
-None.
+1. Pause and play YouTube videos.
+1. Coming soon: skip YouTube ads.
 
-## Usage
+## Setup
 
-### Setup
+### Environment
 
-1. Start [whisper](infra/whisper/README.md).
-1. Start [ollama](infra/ollama/README.md).
+1. Create `.env` file from [`example.env`](./example.env).
+   ```bash
+   # From the repo root directory
+   make env
+   ```
+1. Modify `.env` with your preferred editor.
 
-### Run
+### Infrastructure
 
-Run the listener and executor in separate terminals.
+#### Whisper
 
-#### Listener
+Follow the instructions on [infra/whisper](./infra/whisper/README.md).
 
-```bash
-# From the repo root directory
-go run cmd/listener/main.go
-```
+#### Ollama
 
-#### Executor
+Follow the instructions on [infra/ollama](./infra/ollama/README.md).
 
-```bash
-# From the repo root directory
-go run cmd/executor/main.go
-```
-
-## Development
-
-### Debug
-
-Enable debug in the `main.go` files and run as you normally would.
-
-### Testing
-
-#### Listener
-
-Just start the listener, and talk to it.
+## Run
 
 #### Executor
 
-Send the command through TCP.
+Run the executor first.
 
 ```bash
-echo "skip_ad" | nc 127.0.0.1 4242
+# From the repo root directory
+make executor
+```
+
+#### Listener
+
+Run the listener second.
+
+```bash
+# From the repo root directory
+make listener
 ```

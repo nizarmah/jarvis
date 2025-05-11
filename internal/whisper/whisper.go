@@ -12,22 +12,28 @@ import (
 	"strings"
 )
 
-// TranscriberConfig is the configuration for a Transcriber.
-type TranscriberConfig struct {
+// ClientConfig is the configuration for a Client.
+type ClientConfig struct {
 	// Debug enables logging while transcribing.
 	Debug bool
+	// Model is the name of the model to use.
+	Model string
+	// Language is the language to use.
+	Language string
 	// OutputDir is the directory to output the results to.
 	OutputDir string
 }
 
-// Transcriber is a transcriber for audio files.
-type Transcriber struct {
+// Client is a client for the whisper service.
+type Client struct {
 	debug     bool
+	model     string
+	language  string
 	outputDir string
 }
 
-// NewTranscriber creates a new Transcriber.
-func NewTranscriber(ctx context.Context, cfg TranscriberConfig) (*Transcriber, error) {
+// NewClient creates a new Client.
+func NewClient(ctx context.Context, cfg ClientConfig) (*Client, error) {
 	// Ensure the whisper service is running.
 	if err := ensureWhisperIsRunning(ctx, cfg.Debug); err != nil {
 		return nil, err
@@ -41,15 +47,17 @@ func NewTranscriber(ctx context.Context, cfg TranscriberConfig) (*Transcriber, e
 		return nil, fmt.Errorf("failed to create output dir: %w", err)
 	}
 
-	return &Transcriber{
+	return &Client{
 		debug:     cfg.Debug,
+		model:     cfg.Model,
+		language:  cfg.Language,
 		outputDir: cfg.OutputDir,
 	}, nil
 }
 
 // Transcribe transcribes the audio file and returns the transcription.
-func (t *Transcriber) Transcribe(ctx context.Context, filePath string) (string, error) {
-	transcriptionPath, err := doTranscription(ctx, filePath, t.outputDir, t.debug)
+func (t *Client) Transcribe(ctx context.Context, filePath string) (string, error) {
+	transcriptionPath, err := t.doTranscription(ctx, filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to transcribe audio file: %w", err)
 	}
@@ -71,24 +79,24 @@ func (t *Transcriber) Transcribe(ctx context.Context, filePath string) (string, 
 }
 
 // doTranscription transcribes the audio using the whisper service and returns the transcription file path.
-func doTranscription(ctx context.Context, filePath, outputDir string, debug bool) (string, error) {
+func (t *Client) doTranscription(ctx context.Context, filePath string) (string, error) {
 	args := []string{
 		// Execute a command inside the service.
-		"compose", "exec", "-T", transcriberService,
+		"compose", "exec", "-T", "whisper",
 		// Transcribe the audio file.
 		"whisper", filePath,
 		// Specify the model to use.
-		"--model", transcriberModel,
+		"--model", t.model,
 		// Specify the language to use.
-		"--language", transcriberLanguage,
+		"--language", t.language,
 		// Output the results in text format.
 		"--output_format", "txt",
 		// Output the results to the specified directory.
-		"--output_dir", outputDir,
+		"--output_dir", t.outputDir,
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	if debug {
+	if t.debug {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
@@ -100,7 +108,7 @@ func doTranscription(ctx context.Context, filePath, outputDir string, debug bool
 	audioFilename := filepath.Base(filePath)
 	transcriptionFilename := fmt.Sprintf("%s.txt", strings.TrimSuffix(audioFilename, filepath.Ext(filePath)))
 
-	transcriptionPath := filepath.Join(outputDir, transcriptionFilename)
+	transcriptionPath := filepath.Join(t.outputDir, transcriptionFilename)
 
 	return transcriptionPath, nil
 }
@@ -121,8 +129,8 @@ func ensureWhisperIsRunning(ctx context.Context, debug bool) error {
 		log.Println(fmt.Sprintf("services running: %s", services))
 	}
 
-	if !slices.Contains(services, transcriberService) {
-		return fmt.Errorf("service %q is not running", transcriberService)
+	if !slices.Contains(services, "whisper") {
+		return fmt.Errorf("service %q is not running", "whisper")
 	}
 
 	return nil
