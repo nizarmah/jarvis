@@ -10,21 +10,23 @@ import (
 
 // Env holds relevant env variables.
 type Env struct {
-	AudioProcessorDebug  bool
-	CommandDebug         bool
-	CombinerDebug        bool
-	CombinerOutputDir    string
-	ExecutorAddress      string
-	ExecutorDebug        bool
-	MessageHandlerDebug  bool
-	OllamaDebug          bool
-	OllamaModel          string
-	OllamaTimeout        time.Duration
-	OllamaURL            string
-	RecorderDebug        bool
-	RecorderOutputDir    string
-	TranscriberDebug     bool
-	TranscriberOutputDir string
+	AudioProcessorDebug bool
+	CommandDebug        bool
+	CombinerDebug       bool
+	CombinerOutputDir   string
+	ExecutorAddress     string
+	ExecutorDebug       bool
+	MessageHandlerDebug bool
+	OllamaDebug         bool
+	OllamaModel         string
+	OllamaTimeout       time.Duration
+	OllamaURL           string
+	RecorderDebug       bool
+	RecorderOutputDir   string
+	WhisperDebug        bool
+	WhisperModel        string
+	WhisperLanguage     string
+	WhisperOutputDir    string
 }
 
 // Init reads env vars.
@@ -99,12 +101,22 @@ func Init() (*Env, error) {
 		return nil, err
 	}
 
-	env.TranscriberDebug, err = lookupBool("TRANSCRIBER_DEBUG")
+	env.WhisperDebug, err = lookupBool("WHISPER_DEBUG")
 	if err != nil {
 		return nil, err
 	}
 
-	env.TranscriberOutputDir, err = lookup("TRANSCRIBER_OUTPUT_DIR")
+	env.WhisperModel, err = lookup("WHISPER_MODEL")
+	if err != nil {
+		return nil, err
+	}
+
+	env.WhisperLanguage, err = lookup("WHISPER_LANGUAGE")
+	if err != nil {
+		return nil, err
+	}
+
+	env.WhisperOutputDir, err = lookup("WHISPER_OUTPUT_DIR")
 	if err != nil {
 		return nil, err
 	}

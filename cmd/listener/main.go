@@ -69,8 +69,10 @@ func main() {
 
 	// Initialize the whisper client.
 	transcriber, err := whisper.NewClient(ctx, whisper.ClientConfig{
-		Debug:     e.TranscriberDebug,
-		OutputDir: e.TranscriberOutputDir,
+		Debug:     e.WhisperDebug,
+		Model:     e.WhisperModel,
+		Language:  e.WhisperLanguage,
+		OutputDir: e.WhisperOutputDir,
 	})
 	if err != nil {
 		log.Fatal(err)
