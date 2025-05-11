@@ -27,7 +27,7 @@ const (
 	// We can use ffmpeg `filter_complex` but it's slower, and `-f concat` requires a file list `list.txt`.
 	chunkFormat = "aac"
 	// chunkWrap is the number of chunks to keep.
-	chunkWrap = 6
+	chunkWrap = 3
 )
 
 // Chunk variables.
