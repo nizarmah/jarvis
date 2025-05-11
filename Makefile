@@ -33,20 +33,14 @@ env:
 
 # Setup --- Infrastructure ---
 
-# Setup all infrastructure
-infra:
-	@echo "Setting up infrastructure..."
-	@make infra-ollama
-	@make infra-whisper
-
-# Prepare the ollama infrastructure
+# Setup the ollama infrastructure
 infra-ollama:
 	@echo "Pulling ollama model..."
 	@ollama pull $(OLLAMA_MODEL)
 	@echo "Pre-loading ollama model..."
 	@ollama run $(OLLAMA_MODEL) "Reply with one word. Hello."
 
-# Prepare the whisper infrastructure
+# Setup the whisper infrastructure
 infra-whisper:
 	@echo "Building whisper image..."
 	@docker compose build whisper
