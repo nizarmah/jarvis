@@ -1,20 +1,17 @@
 .PHONY: env executor listener infra infra-ollama infra-whisper test-executor
 
-# Source env vars from .env
-ENV := env $(shell cat .env | xargs)
-
 # Run ---
 
 # Start the executor service
 executor:
 	@echo "Starting executor service..."
-	@$(ENV) go run cmd/executor/main.go
+	@env $(cat .env | xargs) go run cmd/executor/main.go
 
 # Start the listener service
 listener:
 	@echo "Starting listener service..."
 	@rm -rf artifacts/audio/*
-	@$(ENV) go run cmd/listener/main.go
+	@env $(cat .env | xargs) go run cmd/listener/main.go
 
 # Setup ---
 
@@ -42,22 +39,22 @@ infra:
 # Prepare the ollama infrastructure
 infra-ollama:
 	@echo "Pulling ollama model..."
-	@$(ENV) ollama pull $(OLLAMA_MODEL)
+	@env $(cat .env | xargs) ollama pull $(OLLAMA_MODEL)
 	@echo "Pre-loading ollama model..."
-	@$(ENV) ollama run $(OLLAMA_MODEL) "Reply with one word. Hello."
+	@env $(cat .env | xargs) ollama run $(OLLAMA_MODEL) "Reply with one word. Hello."
 
 # Prepare the whisper infrastructure
 infra-whisper:
 	@echo "Building whisper image..."
-	@$(ENV) docker compose build whisper
+	@env $(cat .env | xargs) docker compose build whisper
 	@echo "Starting whisper container..."
-	@$(ENV) docker compose up whisper -d
+	@env $(cat .env | xargs) docker compose up whisper -d
 	@echo "Pre-loading whisper model..."
-	@$(ENV) docker compose exec whisper download-model $(WHISPER_MODEL)
+	@env $(cat .env | xargs) docker compose exec whisper download-model $(WHISPER_MODEL)
 	@echo "Pre-loading whisper language..."
-	@$(ENV) docker compose exec whisper download-language $(WHISPER_LANGUAGE)
+	@env $(cat .env | xargs) docker compose exec whisper download-language $(WHISPER_LANGUAGE)
 	@echo "Testing whisper container..."
-	@$(ENV) docker compose exec whisper \
+	@env $(cat .env | xargs) docker compose exec whisper \
 		whisper \
 		--model $(WHISPER_MODEL) \
 		--language $(WHISPER_LANGUAGE) \
