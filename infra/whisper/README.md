@@ -4,7 +4,9 @@ We use [whisper](https://github.com/openai/whisper) to transcribe audio.
 
 ## Install
 
-Follow the [official docs](https://github.com/ollama/ollama/tree/main/docs).
+Follow the [official docs](https://docs.docker.com/get-started/get-docker/) to install docker.
+
+We'll run Whisper inside a container.
 
 ## Environment
 

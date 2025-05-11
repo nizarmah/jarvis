@@ -2,14 +2,13 @@
 
 Jarvis is a voice assistant.
 
-It barely works, but it's still helpful while I'm doing the dishes.
+It barely works. But with time, it'll operate my computer while I do the dishes.
 
-> Voice control for YouTube when your hands are full. Reliable-ish. Scrappy. Definitely over-engineered.
+> Voice control for when your hands are full. Unrealiable. Scrappy. Definitely over-engineered.
 
 ## Capabilities
 
 1. Pause and play YouTube videos.
-1. Coming soon: skip YouTube ads.
 
 ## Usage
 
