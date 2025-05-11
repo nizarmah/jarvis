@@ -64,6 +64,7 @@ func NewCombiner(cfg CombinerConfig) (*Combiner, error) {
 	}
 
 	return &Combiner{
+		chunksNum:  cfg.ChunksNum,
 		debug:      cfg.Debug,
 		inputDir:   cfg.InputDir,
 		outputDir:  cfg.OutputDir,
