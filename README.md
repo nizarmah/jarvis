@@ -2,12 +2,20 @@
 
 Jarvis is a voice assistant.
 
-It's pathetic, but helpful while I'm doing the dishes.
+It barely works, but it's still helpful while I'm doing the dishes.
 
 ## Capabilities
 
 1. Pause and play YouTube videos.
 1. Coming soon: skip YouTube ads.
+
+## Usage
+
+Run Jarvis using the instructions below. Then, open a YouTube video and start doing the dishes.
+
+Now that your hands are busy, just yell "Jarvis, pause the video" and hopefully Jarvis will catch on.
+
+If it doesn't, yell a little longer to get it out of your system, and, then, open an issue.
 
 ## Setup
 
