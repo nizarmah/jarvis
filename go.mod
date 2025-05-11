@@ -2,7 +2,10 @@ module github.com/nizarmah/jarvis
 
 go 1.24.3
 
-require github.com/fsnotify/fsnotify v1.9.0
+require (
+	github.com/fsnotify/fsnotify v1.9.0
+	github.com/go-vgo/robotgo v0.110.7
+)
 
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
@@ -13,7 +16,6 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/gen2brain/shm v0.1.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-vgo/robotgo v0.110.7 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
@@ -27,6 +29,7 @@ require (
 	github.com/mgechev/revive v1.9.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/otiai10/gosseract v2.2.1+incompatible // indirect
+	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robotn/xgb v0.10.0 // indirect
