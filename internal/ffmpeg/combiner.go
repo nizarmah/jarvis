@@ -18,6 +18,8 @@ type OnCombinedFunc func(ctx context.Context, filePath string) error
 
 // CombinerConfig is the configuration for the combiner.
 type CombinerConfig struct {
+	// ChunksNum is the number of chunks kept by the recorder.
+	ChunksNum int
 	// Debug enables logging while watching and combining chunks.
 	Debug bool
 	// InputDir is the directory for the audio chunks.
@@ -30,6 +32,7 @@ type CombinerConfig struct {
 
 // Combiner is a combiner for audio chunks.
 type Combiner struct {
+	chunksNum int
 	debug     bool
 	inputDir  string
 	outputDir string
@@ -177,7 +180,7 @@ func (c *Combiner) handleChunk(ctx context.Context, filename string) error {
 	// eg. current chunk `chunk_0.wav` has previous chunk `chunk_5.wav`
 	previousChunkIndex := chunkIndex - 1
 	if previousChunkIndex < 0 {
-		previousChunkIndex = chunkWrap - 1
+		previousChunkIndex = c.chunksNum - 1
 	}
 
 	// Get the current and previous chunk filenames.

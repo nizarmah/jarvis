@@ -13,7 +13,7 @@ executor:
 # Start the listener service
 listener:
 	@echo "Starting listener service..."
-	@rm -rf artifacts/audio/*
+	@rm -rf artifacts/audio
 	@go run cmd/listener/main.go
 
 # Setup ---

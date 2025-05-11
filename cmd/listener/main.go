@@ -80,6 +80,8 @@ func main() {
 
 	// Initialize the recorder.
 	recorder, err := ffmpeg.NewRecorder(ffmpeg.RecorderConfig{
+		ChunkNum:  e.RecorderChunkNum,
+		ChunkSize: e.RecorderChunkSize,
 		Debug:     e.RecorderDebug,
 		OutputDir: e.RecorderOutputDir,
 		OS:        runtime.GOOS,
@@ -90,6 +92,7 @@ func main() {
 
 	// Initialize the combiner.
 	combiner, err := ffmpeg.NewCombiner(ffmpeg.CombinerConfig{
+		ChunksNum:  e.RecorderChunkNum,
 		Debug:      e.CombinerDebug,
 		InputDir:   e.RecorderOutputDir,
 		OutputDir:  e.CombinerOutputDir,
@@ -193,13 +196,13 @@ func transcribeAudio(
 		return "", fmt.Errorf("failed to cleanup audio file: %w", err)
 	}
 
-	// Trim the transcript.
-	trimmed := strings.TrimSpace(untrimmed)
-
 	// Cleanup punctuation.
-	cleaned := strings.ReplaceAll(trimmed, ".", "")
+	cleaned := strings.ReplaceAll(untrimmed, ".", "")
 
-	return strings.ToLower(cleaned), nil
+	// Trim the transcript.
+	trimmed := strings.TrimSpace(cleaned)
+
+	return strings.ToLower(trimmed), nil
 }
 
 // HasWakeUpWord checks if the wake up word is in the transcript.

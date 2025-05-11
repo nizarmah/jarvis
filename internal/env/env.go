@@ -21,6 +21,8 @@ type Env struct {
 	OllamaModel         string
 	OllamaTimeout       time.Duration
 	OllamaURL           string
+	RecorderChunkNum    int
+	RecorderChunkSize   int
 	RecorderDebug       bool
 	RecorderOutputDir   string
 	WhisperDebug        bool
@@ -87,6 +89,16 @@ func Init() (*Env, error) {
 	}
 
 	env.OllamaURL, err = lookup("OLLAMA_URL")
+	if err != nil {
+		return nil, err
+	}
+
+	env.RecorderChunkNum, err = lookupInt("RECORDER_CHUNK_NUM")
+	if err != nil {
+		return nil, err
+	}
+
+	env.RecorderChunkSize, err = lookupInt("RECORDER_CHUNK_SIZE")
 	if err != nil {
 		return nil, err
 	}

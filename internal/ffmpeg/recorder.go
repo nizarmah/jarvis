@@ -12,6 +12,10 @@ import (
 
 // RecorderConfig is the configuration for the recorder.
 type RecorderConfig struct {
+	// ChunkNum is the number of chunks to record.
+	ChunkNum int
+	// ChunkSize is the size of the audio chunks in seconds.
+	ChunkSize int
 	// Debug enables logging during ffmpeg command execution.
 	Debug bool
 	// OutputDir is the directory for the audio chunks.
@@ -22,6 +26,8 @@ type RecorderConfig struct {
 
 // Recorder is a rolling recorder for audio chunks.
 type Recorder struct {
+	chunkNum  int
+	chunkSize int
 	debug     bool
 	outputDir string
 	os        string
@@ -45,6 +51,8 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 	}
 
 	return &Recorder{
+		chunkNum:  cfg.ChunkNum,
+		chunkSize: cfg.ChunkSize,
 		debug:     cfg.Debug,
 		outputDir: cfg.OutputDir,
 		os:        runtime.GOOS,
@@ -53,7 +61,7 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 
 // Start starts a rolling recorder using ffmpeg.
 func (r *Recorder) Start(ctx context.Context) error {
-	args, err := buildRecorderArgs(r.os, r.outputDir)
+	args, err := r.buildRecorderArgs()
 	if err != nil {
 		return fmt.Errorf("failed to build args: %w", err)
 	}
@@ -70,16 +78,24 @@ func (r *Recorder) Start(ctx context.Context) error {
 }
 
 // buildRecorderArgs builds the arguments for the ffmpeg command.
-func buildRecorderArgs(os string, outputDir string) ([]string, error) {
-	inputArgs, err := inputDeviceArgs(os)
+func (r *Recorder) buildRecorderArgs() ([]string, error) {
+	inputArgs, err := inputDeviceArgs(r.os)
 	if err != nil {
 		return nil, err
 	}
 
-	return buildFfmpegArgs(
+	chunkArgs := append(
 		chunkFfmpegArgs,
+		// Each segment/file is 2 seconds long
+		"-segment_time", fmt.Sprintf("%d", r.chunkSize),
+		// Only keep the last 6 files (chunk_0.wav to chunk_5.wav)
+		"-segment_wrap", fmt.Sprintf("%d", r.chunkNum),
+	)
+
+	return buildFfmpegArgs(
+		chunkArgs,
 		inputArgs,
-		[]string{fmt.Sprintf("%s/%s", outputDir, chunkPattern)},
+		[]string{fmt.Sprintf("%s/%s", r.outputDir, chunkPattern)},
 	), nil
 }
 

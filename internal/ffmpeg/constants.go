@@ -7,14 +7,10 @@ import (
 
 // Chunk constants.
 const (
-	// chunkDuration is the duration of each ffmpeg chunk.
-	chunkDuration = 3
 	// chunkFormat is the format of each ffmpeg chunk.
 	// We use aac because ffmpeg `concat:` only supports mp3 and aac, and in our case aac is better.
 	// We can use ffmpeg `filter_complex` but it's slower, and `-f concat` requires a file list `list.txt`.
 	chunkFormat = "aac"
-	// chunkWrap is the number of chunks to keep.
-	chunkWrap = 3
 )
 
 // Chunk variables.
@@ -34,12 +30,8 @@ var (
 		"-ac", "1",
 		// Enable segmenting the output into separate files
 		"-f", "segment",
-		// Each segment/file is 2 seconds long
-		"-segment_time", fmt.Sprintf("%d", chunkDuration),
 		// Use the WAV container format for each file
 		"-segment_format", chunkFormat,
-		// Only keep the last 6 files (chunk_0.wav to chunk_5.wav)
-		"-segment_wrap", fmt.Sprintf("%d", chunkWrap),
 		// Restart timestamps at 0 for each segment (avoids time drift)
 		"-reset_timestamps", "1",
 	}
