@@ -108,9 +108,7 @@ func (c *Combiner) stop(reason string) error {
 
 	c.watcher = nil
 
-	if c.debug {
-		log.Println(fmt.Sprintf("combiner stopped: %s", reason))
-	}
+	log.Println(fmt.Sprintf("combiner stopped: %s", reason))
 
 	return nil
 }

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -30,6 +31,10 @@ const (
 )
 
 const (
+	processAudioDebug = false
+)
+
+const (
 	recorderDebug     = false
 	combinerDebug     = false
 	ffmpegPlatform    = ffmpeg.PlatformMac
@@ -38,17 +43,17 @@ const (
 )
 
 const (
-	transcriberDebug = true
+	transcriberDebug = false
 	whisperOutputDir = "artifacts/audio/transcripts"
 )
 
 const (
-	ollamaDebug = true
+	ollamaDebug = false
 	// TinyLlama sucks following instructions but is lightweight.
 	// Also, it runs well with Whisper and FFmpeg on my 8GB laptop.
 	ollamaModel = "tinyllama"
-	// Timeout after 5 seconds to avoid hallucinations.
-	ollamaTimeout = 5 * time.Second
+	// Timeout after 2 seconds to avoid hallucinations.
+	ollamaTimeout = 2 * time.Second
 	ollamaURL     = "http://localhost:11434"
 )
 
@@ -157,9 +162,22 @@ func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Clien
 			return fmt.Errorf("failed to transcribe audio: %w", err)
 		}
 
+		// Ignore empty transcripts.
+		if transcript == "" {
+			return nil
+		}
+
+		if processAudioDebug {
+			log.Println(fmt.Sprintf("transcript: %s", transcript))
+		}
+
 		// Check if the transcript has the wake up word.
 		if !hasWakeUpWord(transcript) {
 			return nil
+		}
+
+		if processAudioDebug {
+			log.Println(fmt.Sprintf("transcript has wake up word: %s", transcript))
 		}
 
 		// Extract the command from the transcript.
@@ -168,9 +186,17 @@ func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Clien
 			return fmt.Errorf("failed to extract command: %w", err)
 		}
 
+		if processAudioDebug {
+			log.Println(fmt.Sprintf("command: %s", cmd))
+		}
+
 		// If the command is empty, do nothing.
 		if cmd == "" {
 			return nil
+		}
+
+		if processAudioDebug {
+			log.Println(fmt.Sprintf("command is not empty: %s", cmd))
 		}
 
 		// Execute the command.
@@ -178,8 +204,8 @@ func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Clien
 			return fmt.Errorf("failed to execute command: %w", err)
 		}
 
-		if ollamaDebug {
-			log.Println(fmt.Sprintf("transcript: %s, command: %s", transcript, cmd))
+		if processAudioDebug {
+			log.Println(fmt.Sprintf("command executed: %s", cmd))
 		}
 
 		return nil
@@ -189,7 +215,7 @@ func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Clien
 // TranscribeAudio transcribes the audio file.
 func transcribeAudio(ctx context.Context, transcriber *whisper.Transcriber, filePath string) (string, error) {
 	// Transcribe the audio file.
-	transcript, err := transcriber.Transcribe(ctx, filePath)
+	untrimmed, err := transcriber.Transcribe(ctx, filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to transcribe audio: %w", err)
 	}
@@ -199,7 +225,13 @@ func transcribeAudio(ctx context.Context, transcriber *whisper.Transcriber, file
 		return "", fmt.Errorf("failed to cleanup audio file: %w", err)
 	}
 
-	return transcript, nil
+	// Trim the transcript.
+	trimmed := strings.TrimSpace(untrimmed)
+
+	// Cleanup punctuation.
+	cleaned := strings.ReplaceAll(trimmed, ".", "")
+
+	return strings.ToLower(cleaned), nil
 }
 
 // HasWakeUpWord checks if the wake up word is in the transcript.
@@ -215,6 +247,11 @@ func extractCommand(ctx context.Context, ollama *ollama.Client, transcript strin
 	// Prompt the LLM.
 	response, err := ollama.Prompt(ctx, prompt)
 	if err != nil {
+		// Ignore the error if the context was cancelled.
+		if errors.Is(err, context.DeadlineExceeded) {
+			return "", nil
+		}
+
 		return "", fmt.Errorf("failed to prompt LLM: %w", err)
 	}
 

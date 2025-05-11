@@ -6,7 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -73,6 +75,14 @@ func (c *Client) Prompt(ctx context.Context, prompt string) (string, error) {
 	var parsed generateResult
 	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
 		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if c.debug {
+		log.Println(fmt.Sprintf(
+			"prompt: %s, ollama response: %s",
+			strings.ReplaceAll(prompt, "\n", " "),
+			strings.ReplaceAll(parsed.Response, "\n", " "),
+		))
 	}
 
 	result := parsed.Response
