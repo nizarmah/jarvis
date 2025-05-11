@@ -8,12 +8,21 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/nizarmah/jarvis/internal/ffmpeg"
 	"github.com/nizarmah/jarvis/internal/ollama"
 	"github.com/nizarmah/jarvis/internal/whisper"
+)
+
+var (
+	wakeUpWord = "jarvis"
+	commands   = []string{
+		"pause_video",
+		"play_video",
+	}
 )
 
 const (
@@ -29,12 +38,12 @@ const (
 )
 
 const (
-	transcriberDebug = false
+	transcriberDebug = true
 	whisperOutputDir = "artifacts/audio/transcripts"
 )
 
 const (
-	ollamaDebug = false
+	ollamaDebug = true
 	// TinyLlama sucks following instructions but is lightweight.
 	// Also, it runs well with Whisper and FFmpeg on my 8GB laptop.
 	ollamaModel = "tinyllama"
@@ -148,13 +157,20 @@ func createAudioProcessor(transcriber *whisper.Transcriber, ollama *ollama.Clien
 			return fmt.Errorf("failed to transcribe audio: %w", err)
 		}
 
-		// Build a prompt to instruct LLM.
-		prompt := fmt.Sprintf(promptTemplate, transcript)
+		// Check if the transcript has the wake up word.
+		if !hasWakeUpWord(transcript) {
+			return nil
+		}
 
-		// Prompt the LLM.
-		cmd, err := ollama.Prompt(ctx, prompt)
+		// Extract the command from the transcript.
+		cmd, err := extractCommand(ctx, ollama, transcript)
 		if err != nil {
-			return fmt.Errorf("failed to prompt LLM: %w", err)
+			return fmt.Errorf("failed to extract command: %w", err)
+		}
+
+		// If the command is empty, do nothing.
+		if cmd == "" {
+			return nil
 		}
 
 		// Execute the command.
@@ -186,13 +202,34 @@ func transcribeAudio(ctx context.Context, transcriber *whisper.Transcriber, file
 	return transcript, nil
 }
 
-// ExecuteCommand sends the command to the executor.
-func executeCommand(_ context.Context, command string) error {
-	// If the command is "do_nothing", do nothing.
-	if command == "do_nothing" {
-		return nil
+// HasWakeUpWord checks if the wake up word is in the transcript.
+func hasWakeUpWord(transcript string) bool {
+	return strings.Contains(transcript, wakeUpWord)
+}
+
+// ExtractCommand extracts the command from the transcript.
+func extractCommand(ctx context.Context, ollama *ollama.Client, transcript string) (string, error) {
+	// Build a prompt to instruct LLM.
+	prompt := fmt.Sprintf(promptTemplate, transcript)
+
+	// Prompt the LLM.
+	response, err := ollama.Prompt(ctx, prompt)
+	if err != nil {
+		return "", fmt.Errorf("failed to prompt LLM: %w", err)
 	}
 
+	// Search for the command in the response.
+	for _, command := range commands {
+		if strings.Contains(response, command) {
+			return command, nil
+		}
+	}
+
+	return "", nil
+}
+
+// ExecuteCommand sends the command to the executor.
+func executeCommand(_ context.Context, command string) error {
 	// Connect to the executor.
 	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%s", executorPort))
 	if err != nil {
