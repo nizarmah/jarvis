@@ -15,18 +15,18 @@ type OnMessageFunc func(ctx context.Context, msg string) error
 
 // TCPServerConfig is the configuration for the TCP server.
 type TCPServerConfig struct {
+	// Address is the address to listen on.
+	Address string
 	// Debug enables logging while watching and combining chunks.
 	Debug bool
-	// Port is the port to listen on.
-	Port string
 	// OnMessage is the callback for processing messages.
 	OnMessage OnMessageFunc
 }
 
 // TCPServer is a TCP server.
 type TCPServer struct {
-	debug bool
-	port  string
+	address string
+	debug   bool
 
 	onMessage OnMessageFunc
 	listener  net.Listener
@@ -35,17 +35,17 @@ type TCPServer struct {
 // NewTCPServer creates a new TCP server.
 func NewTCPServer(cfg TCPServerConfig) *TCPServer {
 	return &TCPServer{
+		address:   cfg.Address,
 		debug:     cfg.Debug,
-		port:      cfg.Port,
 		onMessage: cfg.OnMessage,
 	}
 }
 
 // Start starts the TCP server.
 func (s *TCPServer) Start(ctx context.Context) error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", s.port))
+	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", s.port, err)
+		return fmt.Errorf("failed to listen on address %q: %w", s.address, err)
 	}
 
 	// Store the listener for future use.
@@ -53,9 +53,7 @@ func (s *TCPServer) Start(ctx context.Context) error {
 
 	go s.runListener(ctx, listener)
 
-	if s.debug {
-		log.Println(fmt.Sprintf("server started on port %s", s.port))
-	}
+	log.Println(fmt.Sprintf("server started on address %q", s.address))
 
 	return nil
 }
@@ -72,9 +70,7 @@ func (s *TCPServer) stop(reason string) error {
 
 	s.listener = nil
 
-	if s.debug {
-		log.Println(fmt.Sprintf("server stopped: %s", reason))
-	}
+	log.Println(fmt.Sprintf("server stopped: %s", reason))
 
 	return nil
 }

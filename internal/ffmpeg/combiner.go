@@ -89,9 +89,7 @@ func (c *Combiner) Start(ctx context.Context) error {
 
 	go c.runWatcher(ctx)
 
-	if c.debug {
-		log.Println("combiner started")
-	}
+	log.Println("combiner started")
 
 	return nil
 }

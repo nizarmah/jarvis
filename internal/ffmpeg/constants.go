@@ -5,19 +5,6 @@ import (
 	"regexp"
 )
 
-// Platform is the platform/os for the ffmpeg.
-type platform string
-
-// Platform constants.
-const (
-	// PlatformMac is the platform for macOS.
-	PlatformMac platform = "mac"
-	// PlatformLinux is the platform for Linux.
-	PlatformLinux platform = "linux"
-	// PlatformWindows is the platform for Windows.
-	PlatformWindows platform = "windows"
-)
-
 // Chunk constants.
 const (
 	// chunkDuration is the duration of each ffmpeg chunk.

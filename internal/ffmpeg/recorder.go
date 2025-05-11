@@ -4,25 +4,27 @@ package ffmpeg
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 // RecorderConfig is the configuration for the recorder.
 type RecorderConfig struct {
 	// Debug enables logging during ffmpeg command execution.
 	Debug bool
-	// Platform is the platform for the recorder.
-	Platform platform
 	// OutputDir is the directory for the audio chunks.
 	OutputDir string
+	// OS is the operating system for the recorder.
+	OS string
 }
 
 // Recorder is a rolling recorder for audio chunks.
 type Recorder struct {
 	debug     bool
 	outputDir string
-	platform  platform
+	os        string
 }
 
 // NewRecorder initializes the recorder.
@@ -35,22 +37,23 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 		return nil, fmt.Errorf("failed to create output dir: %w", err)
 	}
 
-	switch cfg.Platform {
-	case PlatformMac, PlatformLinux, PlatformWindows:
-		return &Recorder{
-			debug:     cfg.Debug,
-			outputDir: cfg.OutputDir,
-			platform:  cfg.Platform,
-		}, nil
-
+	switch runtime.GOOS {
+	case "darwin", "linux", "windows":
+		break
 	default:
-		return nil, fmt.Errorf("unsupported platform: %q", cfg.Platform)
+		return nil, fmt.Errorf("unsupported platform: %q", runtime.GOOS)
 	}
+
+	return &Recorder{
+		debug:     cfg.Debug,
+		outputDir: cfg.OutputDir,
+		os:        runtime.GOOS,
+	}, nil
 }
 
 // Start starts a rolling recorder using ffmpeg.
 func (r *Recorder) Start(ctx context.Context) error {
-	args, err := buildRecorderArgs(r.platform, r.outputDir)
+	args, err := buildRecorderArgs(r.os, r.outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to build args: %w", err)
 	}
@@ -61,12 +64,14 @@ func (r *Recorder) Start(ctx context.Context) error {
 		cmd.Stderr = os.Stderr
 	}
 
+	log.Println("recorder started")
+
 	return cmd.Start()
 }
 
 // buildRecorderArgs builds the arguments for the ffmpeg command.
-func buildRecorderArgs(p platform, outputDir string) ([]string, error) {
-	inputArgs, err := inputDeviceArgs(p)
+func buildRecorderArgs(os string, outputDir string) ([]string, error) {
+	inputArgs, err := inputDeviceArgs(os)
 	if err != nil {
 		return nil, err
 	}
@@ -79,21 +84,21 @@ func buildRecorderArgs(p platform, outputDir string) ([]string, error) {
 }
 
 // inputDeviceArgs returns the input device arguments for the platform.
-func inputDeviceArgs(p platform) ([]string, error) {
-	switch p {
-	case PlatformMac:
+func inputDeviceArgs(os string) ([]string, error) {
+	switch os {
+	case "darwin":
 		// AVFoundation on macOS; ":0" = default microphone.
 		return []string{"-f", "avfoundation", "-i", ":0"}, nil
 
-	case PlatformLinux:
+	case "linux":
 		// ALSA on Linux; "default" = system default microphone.
 		return []string{"-f", "alsa", "-i", "default"}, nil
 
-	case PlatformWindows:
+	case "windows":
 		// DirectShow on Windows; adjust "Microphone" if needed.
 		return []string{"-f", "dshow", "-i", "audio=Microphone"}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported platform: %q", p)
+		return nil, fmt.Errorf("unsupported platform: %q", os)
 	}
 }

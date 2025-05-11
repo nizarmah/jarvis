@@ -10,20 +10,17 @@ import (
 	"syscall"
 
 	"github.com/go-vgo/robotgo"
+	"github.com/nizarmah/jarvis/internal/env"
 	"github.com/nizarmah/jarvis/internal/server"
 )
 
-const (
-	commandDebug = false
-)
-
-const (
-	messageDebug = false
-	serverDebug  = false
-	serverPort   = "4242"
-)
-
 func main() {
+	// Initialize the env.
+	e, err := env.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Context.
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
@@ -33,9 +30,9 @@ func main() {
 
 	// Initialize the server.
 	server := server.NewTCPServer(server.TCPServerConfig{
-		Debug:     serverDebug,
-		Port:      serverPort,
-		OnMessage: createMessageHandler(),
+		Address:   e.ExecutorAddress,
+		Debug:     e.ExecutorDebug,
+		OnMessage: createMessageHandler(e),
 	})
 
 	// Start the server.
@@ -52,14 +49,14 @@ func main() {
 }
 
 // createMessageHandler creates a message handler.
-func createMessageHandler() server.OnMessageFunc {
+func createMessageHandler(e *env.Env) server.OnMessageFunc {
 	return func(ctx context.Context, msg string) error {
 		msg = strings.TrimSpace(strings.ToLower(msg))
-		if messageDebug {
+		if e.MessageHandlerDebug {
 			log.Printf("received message: %q", msg)
 		}
 
-		if err := handleCommand(ctx, msg); err != nil {
+		if err := handleCommand(ctx, e, msg); err != nil {
 			log.Println(fmt.Sprintf("error handling command: %v", err))
 		}
 
@@ -68,13 +65,13 @@ func createMessageHandler() server.OnMessageFunc {
 }
 
 // handleCommand handles the command.
-func handleCommand(_ context.Context, msg string) error {
+func handleCommand(_ context.Context, e *env.Env, msg string) error {
 	switch msg {
 	case "pause_video":
-		return pauseVideo()
+		return pauseVideo(e.CommandDebug)
 
 	case "play_video":
-		return playVideo()
+		return playVideo(e.CommandDebug)
 
 	default:
 		log.Printf("unsupported command: %s", msg)
@@ -84,12 +81,12 @@ func handleCommand(_ context.Context, msg string) error {
 }
 
 // pauseVideo pauses the video.
-func pauseVideo() error {
+func pauseVideo(debug bool) error {
 	if err := robotgo.KeyTap("k"); err != nil {
 		return fmt.Errorf("failed to pause video: %w", err)
 	}
 
-	if commandDebug {
+	if debug {
 		log.Println("paused video")
 	}
 
@@ -97,12 +94,12 @@ func pauseVideo() error {
 }
 
 // playVideo plays the video.
-func playVideo() error {
+func playVideo(debug bool) error {
 	if err := robotgo.KeyTap("k"); err != nil {
 		return fmt.Errorf("failed to play video: %w", err)
 	}
 
-	if commandDebug {
+	if debug {
 		log.Println("played video")
 	}
 

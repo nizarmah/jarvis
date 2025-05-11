@@ -14,6 +14,8 @@
 !docker-compose.yml
 !Dockerfile
 
+!env.example
+
 !artifacts
 !artifacts/samples
 !artifacts/samples/*.wav
@@ -27,7 +29,9 @@
 !infra/whisper
 
 !internal
+!internal/env
 !internal/ffmpeg
+!internal/executor
 !internal/ollama
 !internal/server
 !internal/whisper
