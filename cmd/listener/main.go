@@ -128,7 +128,9 @@ func main() {
 	log.Println("Jarvis is listening...")
 	log.Println("To use Jarvis, say 'Jarvis, <command>!'")
 
-	log.Println("No available commands yet.")
+	log.Println("Available commands:")
+	log.Println("\t- pause the YouTube video")
+	log.Println("\t- play the YouTube video")
 
 	log.Println("Press Ctrl+C to stop.")
 
